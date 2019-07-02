@@ -117,6 +117,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mExecutorService.shutdownNow();
+    }
+
+//==================Record=============================================================================
     public void mkFile() {
         String path =Environment.getExternalStorageDirectory().getAbsolutePath() + "/RecorderTest/";
         mAudioFile = new File( path+ "Lyon.pcm");
@@ -175,13 +182,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mExecutorService.shutdownNow();
-    }
-
     private void recoderFail() {
         mAudioFile = null;
         mIsRecording = false;
@@ -224,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+//==================play=============================================================================
     public void streamPlay(View view) {
         if (mAudioFile != null && !mIsPalying) {
             mIsPalying = true;
