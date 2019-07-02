@@ -42,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
     File mAudioFile;
     FileOutputStream mFileOutputStream;
     private static AudioRecord mAudioRecorder;
-    // ????
     private byte[] mBuffer;
 
 
@@ -57,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private volatile boolean mIsPalying;
 
     Button playBtn,RecordBtn;
+    AudioTrack audioTrack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,51 +69,8 @@ public class MainActivity extends AppCompatActivity {
             PermissionsActivity.startActivityForResult(this, PermissionsActivity.REQUEST_CODE, PermissionsActivity.PERMISSIONS);
         } else {
             setContentView(R.layout.activity_main);
-
-            textView = (TextView) findViewById(R.id.textViewStream);
-            RecordBtn = (Button) findViewById(R.id.Record);
-            playBtn = (Button) findViewById(R.id.play);
-
-            mBuffer = new byte[2048];
-            mExecutorService = Executors.newSingleThreadExecutor();
-
-            RecordBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (mIsRecording) {
-                        RecordBtn.setText("Record");
-                        mIsRecording = false;
-                    } else {
-                        RecordBtn.setText("Recording");
-                        mIsRecording = true;
-                        mExecutorService.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (!startRecorder()) {
-                                    recoderFail();
-                                    try {
-                                        RecordBtn.setText("Record");
-                                    }catch (Exception e){
-                                        Log.e(TAG,""+e);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
-            playBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (mIsRecording) {
-                        RecordBtn.setText("Record");
-                        mIsRecording = false;
-                    }
-                    streamPlay(view);
-
-                }
-            });
+            setAudioRoutingDevice();
+            setUI();
         }
     }
 
@@ -121,6 +78,77 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         mExecutorService.shutdownNow();
+    }
+
+    private void setAudioRoutingDevice(){
+        //Raspberry Pi
+        if(USE_VOICEHAT_I2S_DAC){
+
+        }else{
+            //Record audio
+            int audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+            int sampleRate = 44100;
+            int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+            int mSampleRate = 16000;
+            int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+            int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
+            mAudioRecorder = new AudioRecord(audioSource, sampleRate, channelConfig,
+                    audioFormat, Math.max(minBufferSize, 2048));
+
+            //play audio
+            int streamType = AudioManager.STREAM_MUSIC;
+            int mode = AudioTrack.MODE_STREAM;
+            channelConfig = AudioFormat.CHANNEL_OUT_MONO;
+            audioTrack = new AudioTrack(streamType, sampleRate, channelConfig, audioFormat,
+                    Math.max(minBufferSize, 2048), mode);
+
+        }
+    }
+
+    private void setUI(){
+        textView = (TextView) findViewById(R.id.textViewStream);
+        RecordBtn = (Button) findViewById(R.id.Record);
+        playBtn = (Button) findViewById(R.id.play);
+        mBuffer = new byte[2048];
+        mExecutorService = Executors.newSingleThreadExecutor();
+
+        RecordBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mIsRecording) {
+                    RecordBtn.setText("Record");
+                    mIsRecording = false;
+                } else {
+                    RecordBtn.setText("Recording");
+                    mIsRecording = true;
+                    mExecutorService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!startRecorder()) {
+                                recoderFail();
+                                try {
+                                    RecordBtn.setText("Record");
+                                }catch (Exception e){
+                                    Log.e(TAG,""+e);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        playBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mIsRecording) {
+                    RecordBtn.setText("Record");
+                    mIsRecording = false;
+                }
+                streamPlay(view);
+
+            }
+        });
     }
 
 //==================Record=============================================================================
@@ -146,17 +174,7 @@ public class MainActivity extends AppCompatActivity {
             mkFile();
             mFileOutputStream = new FileOutputStream(mAudioFile);
 
-            int audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION;
-            int sampleRate = 44100;
-            int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-            int mSampleRate = 16000;
 
-
-            int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-            int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
-
-            mAudioRecorder = new AudioRecord(audioSource, sampleRate, channelConfig,
-                    audioFormat, Math.max(minBufferSize, 2048));
             mAudioRecorder.startRecording();
 
             start = System.currentTimeMillis();
@@ -244,16 +262,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void doPaly(File mAudioFile) {
-        int streamType = AudioManager.STREAM_MUSIC;
-        int sampleRate = 44100;
-        int channelConfig = AudioFormat.CHANNEL_OUT_MONO;
-        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        int mode = AudioTrack.MODE_STREAM;
 
-        int minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat);
-
-        AudioTrack audioTrack = new AudioTrack(streamType, sampleRate, channelConfig, audioFormat,
-                Math.max(minBufferSize, 2048), mode);
 
         FileInputStream mFileInputStream = null;
         try {
