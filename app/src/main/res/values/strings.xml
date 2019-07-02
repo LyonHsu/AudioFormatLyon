@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AudioFormatSample</string>
+
+    <string name="string_help_text">「app」需要獲取裝置名稱，缺少管理裝置必要權限，將無法使用。 \n\n請點擊\"設定\"-\"權限\"-打開\"app\"所需權限。 \n\n最後點擊兩次後退按鈕，即可返回。</string>
+    <string name="settings">設定</string>
+    <string name="help">幫助</string>
+    <string name="quit">退出</string>
+    <string name="cancel">取消</string>
+</resources>
